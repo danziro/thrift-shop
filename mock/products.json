@@ -1,0 +1,114 @@
+[
+  {
+    "name": "Nike Air Force 1 Low Triple White (Second)",
+    "price": 450000,
+    "description": "Sepatu Nike Air Force 1, warna putih, kondisi 8/10, size 42.",
+    "category": "sepatu",
+    "imageUrl": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=1200",
+    "buyUrl": "https://example.com/beli/nike-af1",
+    "brand": "Nike",
+    "size": "42",
+    "color": "Putih"
+  },
+  {
+    "name": "Adidas Stan Smith Classic (Second)",
+    "price": 380000,
+    "description": "Adidas Stan Smith putih hijau, kondisi 8.5/10, size 41.",
+    "category": "sepatu",
+    "imageUrl": "https://images.unsplash.com/photo-1519748231208-5960e84c7bf3?w=1200",
+    "buyUrl": "https://example.com/beli/adidas-stan-smith",
+    "brand": "Adidas",
+    "size": "41",
+    "color": "Putih/Hijau"
+  },
+  {
+    "name": "Nike Air Max 90 Infrared (Second)",
+    "price": 520000,
+    "description": "Air Max 90 ikonik, warna infrared, kondisi 8/10, size 43.",
+    "category": "sepatu",
+    "imageUrl": "https://images.unsplash.com/photo-1542291022-7ec8e83f97b8?w=1200",
+    "buyUrl": "https://example.com/beli/nike-air-max-90",
+    "brand": "Nike",
+    "size": "43",
+    "color": "Infrared"
+  },
+  {
+    "name": "Adidas Ultraboost 4.0 Core Black (Second)",
+    "price": 560000,
+    "description": "Ultraboost nyaman untuk lari/harian, kondisi 9/10, size 42.",
+    "category": "sepatu",
+    "imageUrl": "https://images.unsplash.com/photo-1584735175310-9d5df23860dc?w=1200",
+    "buyUrl": "https://example.com/beli/adidas-ultraboost",
+    "brand": "Adidas",
+    "size": "42",
+    "color": "Hitam"
+  },
+  {
+    "name": "Converse Chuck Taylor 70s High Black (Second)",
+    "price": 320000,
+    "description": "Chuck 70s high-top, warna hitam, kondisi 8/10, size 42.",
+    "category": "sepatu",
+    "imageUrl": "https://images.unsplash.com/photo-1515446134809-993c501ca304?w=1200",
+    "buyUrl": "https://example.com/beli/converse-ct70",
+    "brand": "Converse",
+    "size": "42",
+    "color": "Hitam"
+  },
+  {
+    "name": "Vans Old Skool Black White (Second)",
+    "price": 290000,
+    "description": "Vans Old Skool klasik, kondisi 8/10, size 42.",
+    "category": "sepatu",
+    "imageUrl": "https://images.unsplash.com/photo-1520975916090-3105956dac38?w=1200",
+    "buyUrl": "https://example.com/beli/vans-old-skool",
+    "brand": "Vans",
+    "size": "42",
+    "color": "Hitam/Putih"
+  },
+  {
+    "name": "New Balance 574 Grey (Second)",
+    "price": 410000,
+    "description": "NB 574 warna abu, nyaman dipakai, kondisi 8.5/10, size 42.",
+    "category": "sepatu",
+    "imageUrl": "https://images.unsplash.com/photo-1520256862855-398228c41684?w=1200",
+    "buyUrl": "https://example.com/beli/nb-574",
+    "brand": "New Balance",
+    "size": "42",
+    "color": "Abu"
+  },
+  {
+    "name": "Puma Suede Classic Black (Second)",
+    "price": 300000,
+    "description": "Puma Suede klasik, warna hitam, kondisi 8/10, size 41.",
+    "category": "sepatu",
+    "imageUrl": "https://images.unsplash.com/photo-1551107692-3d43c2dd4391?w=1200",
+    "buyUrl": "https://example.com/beli/puma-suede",
+    "brand": "Puma",
+    "size": "41",
+    "color": "Hitam"
+  },
+  {
+    "name": "Asics Gel-Lyte V Navy (Second)",
+    "price": 350000,
+    "description": "Asics Gel-Lyte V navy, empuk dan ringan, kondisi 8/10, size 42.",
+    "category": "sepatu",
+    "imageUrl": "https://images.unsplash.com/photo-1605348532760-6753d2c43329?w=1200",
+    "buyUrl": "https://example.com/beli/asics-gel-lyte-v",
+    "brand": "Asics",
+    "size": "42",
+    "color": "Navy"
+  },
+  {
+    "name": "Reebok Club C 85 White (Second)",
+    "price": 330000,
+    "description": "Reebok Club C 85 putih, clean look, kondisi 8/10, size 42.",
+    "category": "sepatu",
+    "imageUrl": "https://images.unsplash.com/photo-1619605673050-8ae0ae4a5102?w=1200",
+    "buyUrl": "https://example.com/beli/reebok-club-c",
+    "brand": "Reebok",
+    "size": "42",
+    "color": "Putih"
+  }
+]
+
+
