@@ -280,13 +280,16 @@ export default function Chatbox() {
             // proceed to API search with newQuery
             const endpoint = '/api/chat';
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 30000);
+            let timeoutId: NodeJS.Timeout | null = setTimeout(() => controller.abort(), 30000);
             const res = await fetch(endpoint, {
               method: 'POST', headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ message: newQuery }), signal: controller.signal,
             });
             const data = await res.json();
-            clearTimeout(timeoutId);
+            if (timeoutId !== null) {
+              clearTimeout(timeoutId);
+              timeoutId = null;
+            }
             if (!res.ok) throw new Error(data?.error || 'Gagal memproses');
             const items = Array.isArray(data.products) ? data.products : [];
             if (items.length > 0) setProducts(items);
@@ -318,7 +321,7 @@ export default function Chatbox() {
 
       const endpoint = adminMode ? '/api/admin/chat' : '/api/chat';
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000);
+      let timeoutId: NodeJS.Timeout | null = setTimeout(() => controller.abort(), 30000);
       const body: any = { message: text };
       if (adminMode && uploadedImageUrl) body.imageUrl = uploadedImageUrl;
       const res = await fetch(endpoint, {
@@ -328,7 +331,10 @@ export default function Chatbox() {
         signal: controller.signal,
       });
       const data = await res.json();
-      clearTimeout(timeoutId);
+      if (timeoutId !== null) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
       if (!res.ok) throw new Error(data?.error || 'Gagal memproses');
 
       if (adminMode) {
