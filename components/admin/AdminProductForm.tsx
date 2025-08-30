@@ -30,20 +30,23 @@ export function AdminProductForm({
   saving,
 }: {
   value: AdminProductFormValues;
-  onChange: (v: AdminProductFormValues) => void;
+  onChange?: (v: AdminProductFormValues) => void;
   onSubmit: (v: AdminProductFormValues) => Promise<void> | void;
   saving?: boolean;
 }) {
-  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<AdminProductFormValues>({
+  const { register, handleSubmit, watch, setValue, formState: { errors }, reset } = useForm<AdminProductFormValues>({
     resolver: zodResolver(productSchema),
     defaultValues: value,
-    values: value,
     mode: 'onBlur',
   });
   const firstImageUrl = watch('imageUrl');
   const [dragOver, setDragOver] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    reset(value);
+  }, [value, reset]);
 
   type ImgItem = { id: string; localUrl: string; remoteUrl?: string; uploading?: boolean; error?: string };
   const [images, setImages] = useState<ImgItem[]>([]);
@@ -74,13 +77,13 @@ export function AdminProductForm({
     if (first && first !== firstImageUrl) {
       setValue('imageUrl', first, { shouldDirty: true, shouldValidate: true });
       setValue('images', remoteUrls, { shouldDirty: true, shouldValidate: false });
-      onChange({ ...value, imageUrl: first, images: remoteUrls });
+      if (onChange) onChange({ ...value, imageUrl: first, images: remoteUrls });
     }
     // if no images left, clear
     if (!first && firstImageUrl) {
       setValue('imageUrl', '', { shouldDirty: true, shouldValidate: true });
       setValue('images', [], { shouldDirty: true, shouldValidate: false });
-      onChange({ ...value, imageUrl: '', images: [] });
+      if (onChange) onChange({ ...value, imageUrl: '', images: [] });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [images]);
@@ -154,8 +157,10 @@ export function AdminProductForm({
   }
 
   useEffect(() => {
-    const sub = watch((vals) => onChange(vals as AdminProductFormValues));
-    return () => sub.unsubscribe();
+    if (onChange) {
+      const sub = watch((vals) => onChange(vals as AdminProductFormValues));
+      return () => sub.unsubscribe();
+    }
   }, [watch, onChange]);
 
   return (

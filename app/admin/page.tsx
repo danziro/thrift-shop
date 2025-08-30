@@ -365,15 +365,14 @@ export default function AdminPage() {
 
       {editing ? (
         <div ref={overlayRef} onClick={(e)=>{ if (e.target === overlayRef.current) setEditing(null); }} className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fadeIn">
-          <div ref={contentRef} role="dialog" aria-modal="true" aria-labelledby="edit-title" className="relative bg-white w-full max-w-2xl mx-4 rounded-2xl shadow-xl border border-gray-200 overflow-hidden animate-scaleIn">
-            <div className="px-4 py-3 border-b font-semibold flex items-center justify-between">
+          <div ref={contentRef} role="dialog" aria-modal="true" aria-labelledby="edit-title" className="relative bg-white w-full max-w-2xl mx-4 rounded-2xl shadow-xl border border-gray-200 overflow-visible animate-scaleIn max-h-[90vh] flex flex-col">
+            <div className="px-4 py-3 border-b font-semibold flex items-center justify-between shrink-0">
               <h2 id="edit-title">Edit Produk</h2>
               <button type="button" className="btn btn-ghost" onClick={()=>setEditing(null)} aria-label="Tutup modal" disabled={modalSaving}>✕</button>
             </div>
-            <div className="p-4">
+            <div className="p-4 flex-1 overflow-y-auto">
               <AdminProductForm
                 value={editing as unknown as AdminProductFormValues}
-                onChange={(v)=> setEditing(v as unknown as Product)}
                 onSubmit={submitEdit}
                 saving={modalSaving}
               />

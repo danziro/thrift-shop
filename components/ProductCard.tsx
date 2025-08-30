@@ -5,6 +5,7 @@ import { useMemo } from 'react';
 import type { ProductItem } from '@/lib/sheets';
 import { trackEvent } from '@/lib/analytics';
 import { siteConfig } from '@/config/site';
+import { InteractiveHoverButton } from '@/components/ui/interactive-hover-button';
 
 type Props = {
   product: ProductItem;
@@ -87,9 +88,9 @@ export default function ProductCard({ product, hideCta, onClick }: Props) {
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => { trackEvent('cta_buy_whatsapp', { id: product.id, name: product.name, price: product.price }); }}
-              className="text-sm text-white bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-full"
+              className="shrink-0"
             >
-              Beli via WhatsApp
+              <InteractiveHoverButton text="Beli via WhatsApp" variant="ai" icon="right" size="sm" />
             </a>
           ) : (!hideCta && product.buyUrl) ? (
             <a
@@ -97,9 +98,9 @@ export default function ProductCard({ product, hideCta, onClick }: Props) {
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => trackEvent('cta_buy_link', { id: product.id, name: product.name, price: product.price })}
-              className="text-sm text-white bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-full"
+              className="shrink-0"
             >
-              Beli Sekarang
+              <InteractiveHoverButton text="Beli Sekarang" variant="ai" icon="right" size="sm" />
             </a>
           ) : null}
         </div>
