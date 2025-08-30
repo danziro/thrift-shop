@@ -341,11 +341,6 @@ export default function AdminPage() {
       </div>
 
       {editing ? (
-<<<<<<< HEAD
-        <div ref={overlayRef} onClick={(e)=>{ if (e.target === overlayRef.current) setEditing(null); }} className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fadeIn">
-          <div ref={contentRef} role="dialog" aria-modal="true" aria-labelledby="edit-title" className="relative bg-white w-full max-w-2xl mx-4 rounded-2xl shadow-xl border border-gray-200 overflow-visible animate-scaleIn max-h-[90vh] flex flex-col">
-            <div className="px-4 py-3 border-b font-semibold flex items-center justify-between shrink-0">
-=======
         <div 
           ref={overlayRef} 
           onClick={(e) => { 
@@ -363,7 +358,6 @@ export default function AdminPage() {
             className="relative bg-white w-full max-w-2xl mx-4 rounded-2xl shadow-xl border border-gray-200 max-h-[90vh] overflow-y-auto animate-scaleIn"
           >
             <div className="px-4 py-3 border-b font-semibold flex items-center justify-between">
->>>>>>> 463868eaafd9583ba79b40f1ae08b8f6c09419bd
               <h2 id="edit-title">Edit Produk</h2>
               <button 
                 type="button" 
@@ -378,10 +372,6 @@ export default function AdminPage() {
             <div className="p-4 flex-1 overflow-y-auto">
               <AdminProductForm
                 value={editing as unknown as AdminProductFormValues}
-<<<<<<< HEAD
-=======
-                onChange={(v) => !modalSaving && setEditing(v as unknown as Product)}
->>>>>>> 463868eaafd9583ba79b40f1ae08b8f6c09419bd
                 onSubmit={submitEdit}
                 saving={modalSaving}
               />
@@ -406,7 +396,7 @@ export default function AdminPage() {
         .btn-primary { @apply bg-blue-600 text-white border-blue-600 hover:bg-blue-700 hover:border-blue-700 active:bg-blue-800; }
         .btn-ghost { @apply border-slate-300 text-slate-700 hover:bg-slate-50 active:bg-slate-100; }
         .btn-danger { @apply border-rose-500 text-rose-600 hover:bg-rose-50 active:bg-rose-100; }
-        .btn-danger-solid { @apply bg-rose-600 text-white border-rose-600 hover:bg-rose-700 hover:border-rose-700 active:bg-rose-800; }
+        .btn-danger-solid { @apply bg-rose-600 text-white border-rose-600 hover:bg-rose-700 hover:border-blue-700 active:bg-rose-800; }
         button:disabled, .btn[disabled] { @apply opacity-50 cursor-not-allowed pointer-events-none; }
         @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
         @keyframes scaleIn { from { opacity: 0; transform: translateY(8px) scale(0.98) } to { opacity: 1; transform: translateY(0) scale(1) } }
@@ -416,5 +406,3 @@ export default function AdminPage() {
     </main>
   );
 }
-
-
