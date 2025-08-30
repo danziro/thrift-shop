@@ -114,13 +114,6 @@ export default function AdminPage() {
     if (!editing) return;
     prevFocusRef.current = (document.activeElement as HTMLElement) || null;
     document.body.classList.add('overflow-hidden');
-    // focus first focusable element in modal
-    setTimeout(() => {
-      const first = contentRef.current?.querySelector<HTMLElement>(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-      );
-      first?.focus();
-    }, 0);
 
     const onKey = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
@@ -133,22 +126,6 @@ export default function AdminPage() {
         e.preventDefault();
         setEditing(null);
         return;
-      }
-      if (e.key === 'Tab') {
-        const focusables = Array.from(
-          contentRef.current?.querySelectorAll<HTMLElement>(
-            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-          ) || []
-        ).filter(el => !el.hasAttribute('disabled'));
-        if (focusables.length === 0) return;
-        const current = document.activeElement as HTMLElement;
-        const idx = focusables.indexOf(current);
-        let nextIdx = idx;
-        if (e.shiftKey) nextIdx = idx <= 0 ? focusables.length - 1 : idx - 1;
-        else nextIdx = idx === focusables.length - 1 ? 0 : idx + 1;
-        if (idx === -1) return; // let browser pick first
-        e.preventDefault();
-        focusables[nextIdx]?.focus();
       }
     };
     document.addEventListener('keydown', onKey);
@@ -364,20 +341,59 @@ export default function AdminPage() {
       </div>
 
       {editing ? (
+<<<<<<< HEAD
         <div ref={overlayRef} onClick={(e)=>{ if (e.target === overlayRef.current) setEditing(null); }} className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fadeIn">
           <div ref={contentRef} role="dialog" aria-modal="true" aria-labelledby="edit-title" className="relative bg-white w-full max-w-2xl mx-4 rounded-2xl shadow-xl border border-gray-200 overflow-visible animate-scaleIn max-h-[90vh] flex flex-col">
             <div className="px-4 py-3 border-b font-semibold flex items-center justify-between shrink-0">
+=======
+        <div 
+          ref={overlayRef} 
+          onClick={(e) => { 
+            if (e.target === overlayRef.current && !modalSaving) {
+              setEditing(null); 
+            }
+          }} 
+          className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fadeIn"
+        >
+          <div 
+            ref={contentRef} 
+            role="dialog" 
+            aria-modal="true" 
+            aria-labelledby="edit-title" 
+            className="relative bg-white w-full max-w-2xl mx-4 rounded-2xl shadow-xl border border-gray-200 max-h-[90vh] overflow-y-auto animate-scaleIn"
+          >
+            <div className="px-4 py-3 border-b font-semibold flex items-center justify-between">
+>>>>>>> 463868eaafd9583ba79b40f1ae08b8f6c09419bd
               <h2 id="edit-title">Edit Produk</h2>
-              <button type="button" className="btn btn-ghost" onClick={()=>setEditing(null)} aria-label="Tutup modal" disabled={modalSaving}>✕</button>
+              <button 
+                type="button" 
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors" 
+                onClick={() => !modalSaving && setEditing(null)} 
+                aria-label="Tutup modal" 
+                disabled={modalSaving}
+              >
+                ✕
+              </button>
             </div>
             <div className="p-4 flex-1 overflow-y-auto">
               <AdminProductForm
                 value={editing as unknown as AdminProductFormValues}
+<<<<<<< HEAD
+=======
+                onChange={(v) => !modalSaving && setEditing(v as unknown as Product)}
+>>>>>>> 463868eaafd9583ba79b40f1ae08b8f6c09419bd
                 onSubmit={submitEdit}
                 saving={modalSaving}
               />
               <div className="mt-3 flex justify-end gap-2">
-                <button type="button" className="btn btn-ghost" onClick={()=>setEditing(null)} disabled={modalSaving}>Batal</button>
+                <button 
+                  type="button" 
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50" 
+                  onClick={() => !modalSaving && setEditing(null)} 
+                  disabled={modalSaving}
+                >
+                  Batal
+                </button>
               </div>
             </div>
           </div>
