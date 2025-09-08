@@ -43,6 +43,13 @@ h2 { @apply text-2xl md:text-3xl font-bold tracking-tight text-slate-900; }
   @apply rounded-2xl border border-gray-200 bg-white shadow-sm;
 }
 
+/* Mobile typography and spacing tweaks */
+@media (max-width: 640px) {
+  h1 { font-size: 1.75rem; }
+  h2 { font-size: 1.25rem; }
+  .section-title { font-size: 1.25rem; }
+}
+
 /* Reveal on scroll */
 .reveal { opacity: 0; transform: translateY(12px); transition: opacity .6s ease, transform .6s ease; }
 .reveal.show { opacity: 1; transform: translateY(0); }

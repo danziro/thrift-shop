@@ -2,12 +2,13 @@
 
 import React from "react";
 import { ArrowRight, ArrowDown } from "lucide-react";
+import { WhatsappIcon } from "@/components/icons/WhatsappIcon";
 import { cn } from "@/lib/utils";
 
 interface InteractiveHoverButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   text?: string;
   variant?: 'black' | 'ai';
-  icon?: 'right' | 'down';
+  icon?: 'right' | 'down' | 'whatsapp';
   size?: 'sm' | 'md';
 }
 
@@ -16,9 +17,9 @@ const InteractiveHoverButton = React.forwardRef<HTMLButtonElement, InteractiveHo
     const isBlack = variant === 'black';
     const bgColor = isBlack ? 'bg-black' : 'bg-indigo-600';
     const borderColor = isBlack ? 'border-black' : 'border-indigo-600';
-    const IconComp = icon === 'down' ? ArrowDown : ArrowRight;
+    const IconComp = icon === 'whatsapp' ? WhatsappIcon : icon === 'down' ? ArrowDown : ArrowRight;
     const sizeClasses = size === 'sm'
-      ? 'px-4 py-2 text-xs min-w-[9rem]'
+      ? 'px-3 py-1.5 text-xs'
       : 'px-6 py-3 text-sm min-w-[12rem]';
     const iconClasses = size === 'sm' ? 'h-3.5 w-3.5' : 'h-4 w-4';
     return (
@@ -38,11 +39,12 @@ const InteractiveHoverButton = React.forwardRef<HTMLButtonElement, InteractiveHo
           bgColor,
         )} />
 
-        <span className="relative z-20 inline-block translate-x-0 transition-all duration-300 group-hover:translate-x-10 group-hover:opacity-0">
-          {text}
+        <span className="relative z-20 inline-flex items-center gap-1.5 translate-x-0 transition-all duration-300 group-hover:translate-x-10 group-hover:opacity-0">
+          {icon === 'whatsapp' ? <WhatsappIcon className={cn(iconClasses, 'text-green-600')} /> : null}
+          <span>{text}</span>
         </span>
         <div className="absolute inset-0 z-20 flex translate-x-12 items-center justify-center gap-2 px-4 text-white opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:opacity-100">
-          <span>{text}</span>
+          <span className="inline-flex items-center gap-1.5">{text}</span>
           <IconComp className={iconClasses} />
         </div>
       </button>

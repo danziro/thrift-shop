@@ -85,6 +85,9 @@ export type SearchParams = {
   max_price?: number;
   min_price?: number;
   keyword?: string;
+  brand?: string;
+  size?: string;
+  color?: string;
 };
 
 export function filterProducts(products: ProductItem[], params: SearchParams): ProductItem[] {
@@ -92,10 +95,16 @@ export function filterProducts(products: ProductItem[], params: SearchParams): P
   const category = params.kategori?.toLowerCase().trim();
   const minPrice = typeof params.min_price === 'number' ? params.min_price : undefined;
   const maxPrice = typeof params.max_price === 'number' ? params.max_price : undefined;
+  const brandFilter = params.brand?.toLowerCase().trim();
+  const sizeFilter = params.size?.toLowerCase().trim();
+  const colorFilter = params.color?.toLowerCase().trim();
 
-  return products.filter((p) => {
+  const filtered = products.filter((p) => {
     if (p.status && p.status.toLowerCase() === 'draft') return false;
     if (category && !p.category.toLowerCase().includes(category)) return false;
+    if (brandFilter && !(p.brand || '').toLowerCase().includes(brandFilter)) return false;
+    if (sizeFilter && !(p.size || '').toLowerCase().includes(sizeFilter)) return false;
+    if (colorFilter && !(p.color || '').toLowerCase().includes(colorFilter)) return false;
 
     if (keyword) {
       const haystack = `${p.id ?? ''} ${p.name} ${p.description} ${p.category} ${p.brand ?? ''} ${p.size ?? ''} ${p.color ?? ''}`.toLowerCase();
@@ -105,12 +114,14 @@ export function filterProducts(products: ProductItem[], params: SearchParams): P
         'ukuran','size','apakah','ada','yang','di','ke','dari','pada','untuk','dan','atau','atau','dengan','tanpa','dibawah','di','bawah','under','<=','<','maks','budget','harga','sepatu','sandal','sendal','warna','brand','merek'
       ]);
       const tokens = keyword.split(/\s+/).filter(t => t && !stopwords.has(t));
-      if (tokens.length === 0) {
-        // If all tokens are stopwords, don't enforce token matching
-      } else {
+      if (tokens.length > 0) {
+        let matches = 0;
         for (const t of tokens) {
-          if (!haystack.includes(t)) return false;
+          if (haystack.includes(t)) matches++;
         }
+        // Require at least half tokens to match (rounded up), but cap minimum at 1
+        const required = Math.max(1, Math.ceil(tokens.length / 2));
+        if (matches < required) return false;
       }
     }
 
@@ -118,6 +129,36 @@ export function filterProducts(products: ProductItem[], params: SearchParams): P
     if (maxPrice !== undefined && p.price > maxPrice) return false;
     return true;
   });
+
+  // Relevance scoring & sorting
+  if (!keyword && !brandFilter && !sizeFilter && !colorFilter && minPrice === undefined && maxPrice === undefined && !category) {
+    return filtered;
+  }
+
+  function scoreProduct(p: ProductItem): number {
+    let score = 0;
+    const hay = `${p.id ?? ''} ${p.name} ${p.description} ${p.category} ${p.brand ?? ''} ${p.size ?? ''} ${p.color ?? ''}`.toLowerCase();
+    if (brandFilter && (p.brand || '').toLowerCase().includes(brandFilter)) score += 5;
+    if (sizeFilter && (p.size || '').toLowerCase().includes(sizeFilter)) score += 4;
+    if (colorFilter && (p.color || '').toLowerCase().includes(colorFilter)) score += 3;
+    if (category && p.category.toLowerCase().includes(category)) score += 2;
+    if (keyword) {
+      const tokens = keyword.split(/\s+/).filter(Boolean);
+      for (const t of tokens) {
+        if (hay.includes(t)) score += 1;
+      }
+      // bonus exact phrase
+      if (hay.includes(keyword)) score += 2;
+    }
+    // Prefer published or priced products
+    if (Number(p.price || 0) > 0) score += 1;
+    return score;
+  }
+
+  return filtered
+    .map(p => ({ p, s: scoreProduct(p) }))
+    .sort((a, b) => b.s - a.s)
+    .map(x => x.p);
 }
 
 function ensureAuthSheets() {

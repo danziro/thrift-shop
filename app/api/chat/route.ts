@@ -22,6 +22,9 @@ const functionSchema = {
       max_price: { type: 'number' },
       min_price: { type: 'number' },
       keyword: { type: 'string' },
+      brand: { type: 'string' },
+      size: { type: 'string' },
+      color: { type: 'string' },
     },
   },
 } as const;
@@ -59,8 +62,8 @@ export async function POST(req: Request) {
     if (gemini) {
       // Gunakan Gemini (SDK baru) dengan timeout
       const prompt = `Kamu akan mengekstrak parameter pencarian sepatu. Output-kan HANYA JSON valid tanpa teks lain.
-Skema: { "kategori": string(optional), "max_price": number(optional), "min_price": number(optional), "keyword": string(optional) }
-Contoh output: {"kategori":"sepatu","max_price":500000,"keyword":"nike hitam 42"}
+Skema: { "kategori": string(optional), "max_price": number(optional), "min_price": number(optional), "keyword": string(optional), "brand": string(optional), "size": string(optional), "color": string(optional) }
+Contoh output: {"kategori":"sepatu","brand":"nike","color":"hitam","size":"42","max_price":500000,"keyword":"nike hitam 42"}
 Teks pengguna: "${userMessage}"`;
       try {
         const raced = await Promise.race([
@@ -99,17 +102,23 @@ Teks pengguna: "${userMessage}"`;
         // fallback di bawah
       }
     } else {
-      // Heuristik sederhana untuk demo tanpa OpenAI
+      // Heuristik sederhana untuk demo jika model tidak tersedia
       const lower = userMessage.toLowerCase();
       const priceNums = Array.from(lower.matchAll(/(\d+[\.]?\d*)\s?k/g)).map((m) => Number(m[1]) * 1000);
       const maxPrice = priceNums.length ? Math.max(...priceNums) : undefined;
       const minPriceMatch = lower.match(/(di atas|min)\s*(\d+[\.]?\d*)\s?k/);
       const minPrice = minPriceMatch ? Number(minPriceMatch[2]) * 1000 : undefined;
-      const categoryMatch = lower.match(/(hoodie|kemeja|celana|t\-?shirt|kaos)/);
+      const categoryMatch = lower.match(/(hoodie|kemeja|celana|t\-?shirt|kaos|sepatu|sneaker)/);
       const kategori = categoryMatch ? categoryMatch[1].replace('tshirt', 't-shirt') : undefined;
-      const keyword = lower.replace(/[^a-z0-9\s]/g, ' ').split(' ').filter(Boolean).slice(0, 6).join(' ');
+      const brandMatch = lower.match(/(nike|adidas|converse|vans|new balance|puma|reebok|asics|fila|onitsuka)/);
+      const brand = brandMatch ? brandMatch[1] : undefined;
+      const colorMatch = lower.match(/(hitam|putih|merah|biru|hijau|abu|coklat|cream|krem|kuning)/);
+      const color = colorMatch ? colorMatch[1] : undefined;
+      const sizeMatch = lower.match(/\b(3[5-9]|4[0-6]|[8-9](?:\.5)?|1[0-2](?:\.5)?)\b/); // includes EU 35-46 and US 8-12.5
+      const size = sizeMatch ? sizeMatch[1] : undefined;
+      const keyword = lower.replace(/[^a-z0-9\s]/g, ' ').split(' ').filter(Boolean).slice(0, 8).join(' ');
 
-      params = { kategori, max_price: maxPrice, min_price: minPrice, keyword };
+      params = { kategori, max_price: maxPrice, min_price: minPrice, keyword, brand, size, color };
     }
 
     // Jika ekstraksi dari model gagal (params kosong), pakai fallback keyword dari userMessage

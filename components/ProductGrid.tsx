@@ -43,7 +43,7 @@ export default async function ProductGrid({ limit }: Props) {
 
     return (
       <>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
           {items.map((p, idx) => (
             <ProductCard key={idx} product={p} />
           ))}
@@ -57,7 +57,7 @@ export default async function ProductGrid({ limit }: Props) {
     );
   } catch {
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
         {Array.from({ length: limit ?? 8 }).map((_, i) => (
           <ProductCardSkeleton key={i} />
         ))}

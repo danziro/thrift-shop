@@ -72,7 +72,15 @@ export default function Chatbox() {
     };
     openIfHash();
     window.addEventListener('hashchange', openIfHash);
-    return () => window.removeEventListener('hashchange', openIfHash);
+    const onChatOpen = () => {
+      setIsOpen(true);
+      trackEvent('chat_open', { source: 'event' });
+    };
+    window.addEventListener('chat:open', onChatOpen as EventListener);
+    return () => {
+      window.removeEventListener('hashchange', openIfHash);
+      window.removeEventListener('chat:open', onChatOpen as EventListener);
+    };
   }, []);
 
   const SHOW_SUGGESTIONS = useMemo(() => String(process.env.NEXT_PUBLIC_CHAT_SHOW_SUGGESTIONS || 'false') === 'true', []);
@@ -391,12 +399,12 @@ export default function Chatbox() {
       {isOpen && (
         <div
           ref={panelRef}
-          className="w-80 sm:w-96 md:w-[28rem] bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden chat-panel-enter flex flex-col max-h-[min(80vh,700px)]"
+          className="w-72 sm:w-96 md:w-[28rem] bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden chat-panel-enter flex flex-col max-h-[min(75vh,640px)]"
         >
           <div className="p-3 bg-white/70 backdrop-blur-md border-b border-white/40 flex items-center justify-between">
             <div>
-              <p className="text-sm font-semibold text-blue-700">{adminMode ? 'Asisten Admin Thrift Shop' : 'Asisten Thrift Shop'}</p>
-              <p className="text-xs text-blue-700/70">{adminMode ? 'Ketik perintah: tambah/edit produk via natural language. Bisa upload gambar & voice.' : 'Tanya produk: brand, ukuran, warna, budget.'}</p>
+              <p className="text-xs sm:text-sm font-semibold text-blue-700">{adminMode ? 'Asisten Admin Thrift Shop' : 'Asisten Thrift Shop'}</p>
+              <p className="text-[11px] sm:text-xs text-blue-700/70">{adminMode ? 'Ketik perintah: tambah/edit produk via natural language. Bisa upload gambar & voice.' : 'Tanya produk: brand, ukuran, warna, budget.'}</p>
             </div>
             <button aria-label="Tutup" onClick={() => setIsOpen(false)} className="p-1 text-blue-700 hover:text-blue-900">
               <X className="w-4 h-4" />
@@ -432,23 +440,23 @@ export default function Chatbox() {
               )}
             </div>
           )}
-          <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 space-y-3">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 space-y-2">
             {messages.map((m, idx) => (
               <div key={idx} className={`message-row flex items-end gap-2 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 {m.role === 'assistant' ? (
-                  <div className="w-7 h-7 rounded-full bg-blue-600 text-white grid place-items-center shrink-0">
-                    <Bot className="w-4 h-4" />
+                  <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-blue-600 text-white grid place-items-center shrink-0">
+                    <Bot className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </div>
                 ) : null}
                 <div className={
-                  'px-3 py-2 rounded-2xl transition whitespace-pre-wrap break-words max-w-[85%] shadow-sm ' +
+                  'px-3 py-2 rounded-2xl transition whitespace-pre-wrap break-words max-w-[85%] shadow-sm text-[13px] sm:text-sm ' +
                   (m.role === 'user' ? 'bg-blue-600 text-white' : 'bg-gray-100/90 text-gray-800 backdrop-blur-sm')
                 }>
                   <span>{m.content}</span>
                 </div>
                 {m.role === 'user' ? (
-                  <div className="w-7 h-7 rounded-full bg-slate-700 text-white grid place-items-center shrink-0">
-                    <User className="w-4 h-4" />
+                  <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-slate-700 text-white grid place-items-center shrink-0">
+                    <User className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </div>
                 ) : null}
               </div>
@@ -472,20 +480,49 @@ export default function Chatbox() {
                     </button>
                   </div>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {products.length === 0 ? (
-                    <div className="text-gray-500 text-sm">Tidak ada produk.</div>
-                  ) : (
-                    products.map((p, i) => (
-                      <ProductCard
-                        key={i}
-                        product={p}
-                        hideCta
-                        onClick={() => setQuickView(p)}
-                      />
-                    ))
-                  )}
-                </div>
+                {products.length === 0 ? (
+                  <div className="text-gray-500 text-sm">Tidak ada produk.</div>
+                ) : products.length === 1 ? (
+                  <div className="border border-gray-200 rounded-xl p-2 hover:bg-gray-50 transition cursor-pointer" onClick={() => setQuickView(products[0])}>
+                    <div className="flex items-center gap-3">
+                      <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-gray-100 shrink-0">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={products[0].imageUrl} alt={products[0].name} className="w-full h-full object-cover" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-slate-900 line-clamp-2">{products[0].name}</p>
+                        <p className="text-xs text-blue-700 font-semibold mt-0.5">Rp {Number(products[0].price||0).toLocaleString('id-ID')}</p>
+                        {products[0].size ? (
+                          <p className="text-[11px] text-slate-500 mt-0.5">Ukuran: {products[0].size}</p>
+                        ) : null}
+                        <p className="text-[11px] text-slate-600 line-clamp-2 mt-0.5">{products[0].description}</p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="-mx-3 px-3 overflow-x-auto no-scrollbar">
+                    <div className="flex gap-3 pr-1">
+                      {products.map((p, i) => (
+                        <button
+                          key={i}
+                          className="min-w-[220px] max-w-[220px] border border-gray-200 rounded-xl p-2 text-left hover:bg-gray-50 transition"
+                          onClick={() => setQuickView(p)}
+                        >
+                          <div className="relative w-full h-28 rounded-lg overflow-hidden bg-gray-100">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover" />
+                          </div>
+                          <p className="mt-2 text-[13px] font-medium text-slate-900 line-clamp-2">{p.name}</p>
+                          <p className="text-[12px] text-blue-700 font-semibold">Rp {Number(p.price||0).toLocaleString('id-ID')}</p>
+                          {p.size ? (
+                            <p className="text-[11px] text-slate-500">Ukuran: {p.size}</p>
+                          ) : null}
+                          <p className="text-[11px] text-slate-600 line-clamp-2 mt-0.5">{p.description}</p>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </>
             ) : null}
             <div ref={endRef} />

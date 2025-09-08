@@ -22,20 +22,21 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-6 py-12">
+      <section className="relative mx-auto max-w-6xl px-6 py-12 overflow-hidden">
+        <div className="absolute inset-0 -z-10 bg-gradient-to-b from-amber-50 via-amber-50/60 to-transparent" />
         <h2 className="section-title">Kenapa Pilih Kami?</h2>
-        <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Reveal className="card p-6">
-            <p className="text-lg font-semibold text-slate-900">Ori, Aman, Nyaman</p>
-            <p className="text-slate-600 mt-2">Kurasi sepatu ori pre-loved. Detail kondisi jujur, tanpa drama.</p>
+        <div className="mt-6 grid grid-cols-3 gap-3 sm:gap-4 transition-transform duration-500 will-change-transform">
+          <Reveal className="card p-3 sm:p-5">
+            <p className="text-sm sm:text-base font-semibold text-slate-900">Ori, Aman, Nyaman</p>
+            <p className="text-slate-600 mt-2 text-[11px] sm:text-sm leading-relaxed">Kurasi sepatu ori pre-loved. Detail kondisi jujur, tanpa drama.</p>
           </Reveal>
-          <Reveal className="card p-6">
-            <p className="text-lg font-semibold text-slate-900">Harga Masuk Akal</p>
-            <p className="text-slate-600 mt-2">Biar kantong aman, rasa tetap jalan. Kualitas dulu, harga menyusul.</p>
+          <Reveal className="card p-3 sm:p-5">
+            <p className="text-sm sm:text-base font-semibold text-slate-900">Harga Masuk Akal</p>
+            <p className="text-slate-600 mt-2 text-[11px] sm:text-sm leading-relaxed">Biar kantong aman, rasa tetap jalan. Kualitas dulu, harga menyusul.</p>
           </Reveal>
-          <Reveal className="card p-6">
-            <p className="text-lg font-semibold text-slate-900">Cari Sekali, Ketemu Pasti</p>
-            <p className="text-slate-600 mt-2">Chat AI kami. Sebutin brand, ukuran, budget—langsung terkurasi.</p>
+          <Reveal className="card p-3 sm:p-5">
+            <p className="text-sm sm:text-base font-semibold text-slate-900">Cari Sekali, Ketemu Pasti</p>
+            <p className="text-slate-600 mt-2 text-[11px] sm:text-sm leading-relaxed">Chat AI kami. Sebutin brand, ukuran, budget—langsung terkurasi.</p>
           </Reveal>
         </div>
       </section>

@@ -222,10 +222,10 @@ export default function AdminPage() {
   }
 
   return (
-    <main className="mx-auto max-w-6xl px-6 py-8">
+    <main className="mx-auto max-w-6xl px-4 sm:px-6 py-6 sm:py-8">
       <h1 className="text-2xl font-bold">Admin Produk</h1>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
-        <section className="lg:col-span-1 card p-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mt-4 sm:mt-6">
+        <section className="lg:col-span-1 card p-3 sm:p-4">
           <h2 className="font-semibold">{form.id ? 'Edit Produk' : 'Tambah Produk'}</h2>
           <div className="mt-3">
             <AdminProductForm
@@ -239,7 +239,7 @@ export default function AdminPage() {
 
         <section className="lg:col-span-2">
           <div className="flex items-center justify-between mb-3">
-            <input value={query} onChange={(e)=>setQuery(e.target.value)} placeholder="Cari produk..." className="input w-64" />
+            <input value={query} onChange={(e)=>setQuery(e.target.value)} placeholder="Cari produk..." className="input w-full sm:w-64" />
             <button
               className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 active:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
               onClick={refresh}
@@ -348,14 +348,14 @@ export default function AdminPage() {
               setEditing(null); 
             }
           }} 
-          className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fadeIn"
+          className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fadeIn p-3"
         >
           <div 
             ref={contentRef} 
             role="dialog" 
             aria-modal="true" 
             aria-labelledby="edit-title" 
-            className="relative bg-white w-full max-w-2xl mx-4 rounded-2xl shadow-xl border border-gray-200 max-h-[90vh] overflow-y-auto animate-scaleIn"
+            className="relative bg-white w-full max-w-2xl mx-0 sm:mx-4 rounded-2xl shadow-xl border border-gray-200 max-h-[85vh] sm:max-h-[90vh] overflow-y-auto animate-scaleIn"
           >
             <div className="px-4 py-3 border-b font-semibold flex items-center justify-between">
               <h2 id="edit-title">Edit Produk</h2>
@@ -369,7 +369,7 @@ export default function AdminPage() {
                 ✕
               </button>
             </div>
-            <div className="p-4 flex-1 overflow-y-auto">
+            <div className="p-3 sm:p-4 flex-1 overflow-y-auto">
               <AdminProductForm
                 value={editing as unknown as AdminProductFormValues}
                 onSubmit={submitEdit}
@@ -378,7 +378,7 @@ export default function AdminPage() {
               <div className="mt-3 flex justify-end gap-2">
                 <button 
                   type="button" 
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50" 
+                  className="px-3 py-2 sm:px-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50" 
                   onClick={() => !modalSaving && setEditing(null)} 
                   disabled={modalSaving}
                 >

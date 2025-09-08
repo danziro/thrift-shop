@@ -6,6 +6,7 @@ import type { ProductItem } from '@/lib/sheets';
 import { trackEvent } from '@/lib/analytics';
 import { siteConfig } from '@/config/site';
 import { InteractiveHoverButton } from '@/components/ui/interactive-hover-button';
+import { WhatsappIcon } from './icons/WhatsappIcon';
 
 type Props = {
   product: ProductItem;
@@ -44,7 +45,7 @@ export default function ProductCard({ product, hideCta, onClick }: Props) {
   return (
     <div
       className={
-        "group card overflow-hidden hover:shadow-lg hover:ring-1 hover:ring-blue-200 transition duration-300 will-change-transform hover:-translate-y-[2px] " +
+        "group card overflow-hidden hover:shadow-lg hover:ring-1 hover:ring-blue-200 transition duration-300 will-change-transform hover:-translate-y-[2px] h-full flex flex-col " +
         (onClick ? "cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-300 outline-none" : "")
       }
       onClick={onClick}
@@ -52,7 +53,7 @@ export default function ProductCard({ product, hideCta, onClick }: Props) {
       tabIndex={onClick ? 0 : undefined}
       onKeyDown={(e) => { if (onClick && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onClick(); } }}
     >
-      <div className="relative w-full h-48 bg-gray-50">
+      <div className="relative w-full h-48 bg-gray-50 sm:h-48 h-40">
         {product.imageUrl ? (
           <Image
             src={product.imageUrl}
@@ -65,23 +66,20 @@ export default function ProductCard({ product, hideCta, onClick }: Props) {
           <div className="w-full h-full flex items-center justify-center text-gray-400">No Image</div>
         )}
       </div>
-      <div className="p-4">
-        <div className="flex items-start justify-between gap-2">
-          <h3 className="font-semibold text-slate-900 line-clamp-1">{product.name}</h3>
-          <span className="shrink-0 text-[10px] uppercase tracking-wide bg-gray-100 text-gray-700 px-2 py-1 rounded-full">{product.category}</span>
+      <div className="p-3 sm:p-4 flex-1 flex flex-col">
+        <div className="flex items-start gap-2">
+          <h3 className="font-medium text-slate-900 text-[12px] sm:text-sm leading-snug line-clamp-2 min-h-[34px]">
+            {product.name}
+          </h3>
         </div>
-        <p className="mt-1 text-blue-700 font-extrabold">Rp {product.price.toLocaleString('id-ID')}</p>
-        <p className="text-slate-600 text-sm mt-2 line-clamp-2">{product.description}</p>
-        <div className="mt-3 flex items-center justify-between">
-          <div className="text-[11px] text-slate-500">
-            {product.brand || ''}
-            {product.size ? (
-              <>
-                {product.brand ? ' • ' : ''}
-                Ukuran {product.size}
-              </>
-            ) : null}
-          </div>
+        <p className="mt-1 text-blue-700 font-semibold text-[13px] sm:text-base">Rp {product.price.toLocaleString('id-ID')}</p>
+        <div className="mt-2 text-slate-600 text-[11px] sm:text-xs leading-relaxed line-clamp-2 min-h-[32px]">
+          {product.description}
+        </div>
+        <div className="mt-2 text-[11px] sm:text-[12px] text-slate-500 leading-snug min-h-[18px]">
+          {product.size ? (<div>Ukuran {product.size}</div>) : null}
+        </div>
+        <div className="mt-auto pt-3 flex items-center justify-end">
           {!hideCta && waUrl ? (
             <a
               href={waUrl}
@@ -90,7 +88,7 @@ export default function ProductCard({ product, hideCta, onClick }: Props) {
               onClick={() => { trackEvent('cta_buy_whatsapp', { id: product.id, name: product.name, price: product.price }); }}
               className="shrink-0"
             >
-              <InteractiveHoverButton text="Beli via WhatsApp" variant="ai" icon="right" size="sm" />
+              <InteractiveHoverButton text="Beli" variant="ai" icon="whatsapp" size="sm" />
             </a>
           ) : (!hideCta && product.buyUrl) ? (
             <a
@@ -100,7 +98,7 @@ export default function ProductCard({ product, hideCta, onClick }: Props) {
               onClick={() => trackEvent('cta_buy_link', { id: product.id, name: product.name, price: product.price })}
               className="shrink-0"
             >
-              <InteractiveHoverButton text="Beli Sekarang" variant="ai" icon="right" size="sm" />
+              <InteractiveHoverButton text="Beli" variant="ai" icon="right" size="sm" />
             </a>
           ) : null}
         </div>
