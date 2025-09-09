@@ -10,7 +10,8 @@ type Props = {
 export default async function ProductGrid({ limit }: Props) {
   try {
     const products: ProductItem[] = await fetchSheetProducts();
-    const items = typeof limit === 'number' ? products.slice(0, limit) : products;
+    const visible = products.filter(p => (p.status || '').toLowerCase() !== 'draft' && (p.status || '').toLowerCase() !== 'sold');
+    const items = typeof limit === 'number' ? visible.slice(0, limit) : visible;
 
     if (!items.length) {
       return (

@@ -6,15 +6,15 @@ import ProductCard from './ProductCard';
 import type { ProductItem } from '@/lib/sheets';
 import { trackEvent } from '@/lib/analytics';
 
-type Message = { role: 'user' | 'assistant'; content: string };
+type Message = { role: 'user' | 'assistant'; content?: string; products?: ProductItem[] };
 
 export default function Chatbox() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [products, setProducts] = useState<ProductItem[] | null>(null);
+  // products persisten dihapus; gunakan pesan khusus dengan payload products per respon
   const [quickView, setQuickView] = useState<ProductItem | null>(null);
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
   const endRef = useRef<HTMLDivElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const fabRef = useRef<HTMLButtonElement | null>(null);
@@ -53,7 +53,7 @@ export default function Chatbox() {
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, products]);
+  }, [messages]);
 
   // Detect admin mode based on current path
   useEffect(() => {
@@ -271,7 +271,7 @@ export default function Chatbox() {
     setLoading(true);
     try {
       // Conversational follow-up handling (client-side) for shopper mode
-      if (!adminMode && products && Array.isArray(products) && products.length > 0) {
+      if (!adminMode) {
         const follow = detectFollowup(text);
         if (follow === 'SIZE_NOT_FIT') {
           const f = parseFilters(text);
@@ -299,22 +299,23 @@ export default function Chatbox() {
               timeoutId = null;
             }
             if (!res.ok) throw new Error(data?.error || 'Gagal memproses');
-            const items = Array.isArray(data.products) ? data.products : [];
-            if (items.length > 0) setProducts(items);
+            const items: ProductItem[] = Array.isArray(data.products) ? (data.products as ProductItem[]) : [];
             setChatCtx((prev) => ({ ...prev, ...f, lastQuery: newQuery, lastProducts: items }));
             const serverMsg: string | undefined = typeof data?.message === 'string' ? data.message : undefined;
             const summary = serverMsg && serverMsg.trim().length
               ? serverMsg
               : (items.length ? say.altSizeFound(String(ctx.size)) : say.altSizeNone(String(ctx.size)));
-            setMessages((m) => [...m, { role: 'assistant', content: summary }]);
+            const nextMsgs: Message[] = [{ role: 'assistant', content: summary }];
+            if (items.length > 0) nextMsgs.push({ role: 'assistant', products: items });
+            setMessages((m) => [...m, ...nextMsgs]);
             playBeep(560, 0.045, 0.064);
             setClarify(null);
             setLoading(false);
             trackEvent('chat_followup_size_search', { size: ctx.size, results: Number(items.length) });
             return;
           } else {
-            // Ask for size preference with quick replies derived from current results
-            const sizes = uniqueSizesFromProducts(products);
+            // Ask for size preference with quick replies derived from last results
+            const sizes = uniqueSizesFromProducts(chatCtx.lastProducts || []);
             const options = sizes.length ? sizes.map(s => `Ukuran ${s}`) : ['Ukuran 41','Ukuran 42','Ukuran 43'];
             const question = 'Ukuran berapa yang kamu cari?';
             setMessages((m) => [...m, { role: 'assistant', content: say.askSize() }]);
@@ -327,6 +328,11 @@ export default function Chatbox() {
         }
       }
 
+      // Tidak perlu membersihkan blok produk global karena kita render sebagai pesan
+      // Log pertanyaan pelanggan (non-admin)
+      if (!adminMode) {
+        try { fetch('/api/queries', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text, referer: typeof window !== 'undefined' ? window.location.href : '' }) }); } catch {}
+      }
       const endpoint = adminMode ? '/api/admin/chat' : '/api/chat';
       const controller = new AbortController();
       let timeoutId: NodeJS.Timeout | null = setTimeout(() => controller.abort(), 30000);
@@ -360,22 +366,26 @@ export default function Chatbox() {
         } catch {}
       } else {
         const items = Array.isArray(data.products) ? data.products : [];
-        if (items.length > 0) setProducts(items); // persist previous cards if empty
-        // Update conversational context from current text
+        // Update conversational context dari teks sekarang
         const f = parseFilters(text);
         setChatCtx((prev) => ({ ...prev, ...f, lastQuery: text, lastProducts: items }));
+
+        // Filter jika user minta ukuran tertentu; jika tidak ada yang cocok, jangan tampilkan list
+        let finalItems = items;
+        if (f.size) finalItems = items.filter((p: ProductItem) => (p.size || '').toLowerCase().includes(String(f.size).toLowerCase()));
+
+        const n = finalItems.length;
         const serverMsg: string | undefined = typeof data?.message === 'string' ? data.message : undefined;
-        const summary = serverMsg && serverMsg.trim().length ? serverMsg : (items.length ? say.found(items.length) : say.none());
-        setMessages((m) => [...m, { role: 'assistant', content: summary }]);
-        playBeep(560, 0.045, 0.064); // bubble reply sound (quieter)
-        trackEvent('chat_send', { textLength: text.length, results: Number(data.products?.length || 0) });
+        const msg = serverMsg || (f.size && n === 0 ? say.altSizeNone(String(f.size)) : (n > 0 ? say.found(n) : say.none()));
+        const nextMsgs: Message[] = [{ role: 'assistant', content: msg }];
+        if (n > 0) nextMsgs.push({ role: 'assistant', products: finalItems });
+        setMessages((m) => [...m, ...nextMsgs]);
+        playBeep(560, 0.045, 0.064);
+        trackEvent('chat_search_success', { count: n });
       }
     } catch (e: any) {
-      // Ensure timeout/abort stops loading state
-      const aborted = e?.name === 'AbortError';
-      const msg = aborted ? 'Permintaan timeout, silakan coba lagi.' : (e?.message || 'Terjadi kesalahan.');
-      setMessages((m) => [...m, { role: 'assistant', content: msg }]);
-      playBeep(420, 0.05, 0.056); // error bubble sound (quieter)
+      setMessages((m) => [...m, { role: 'assistant', content: e?.message || 'Terjadi kesalahan. Coba lagi ya.' }]);
+      playBeep(420, 0.05, 0.056);
     } finally {
       setLoading(false);
     }
@@ -442,88 +452,76 @@ export default function Chatbox() {
           )}
           <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 space-y-2">
             {messages.map((m, idx) => (
-              <div key={idx} className={`message-row flex items-end gap-2 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                {m.role === 'assistant' ? (
-                  <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-blue-600 text-white grid place-items-center shrink-0">
-                    <Bot className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  </div>
-                ) : null}
-                <div className={
-                  'px-3 py-2 rounded-2xl transition whitespace-pre-wrap break-words max-w-[85%] shadow-sm text-[13px] sm:text-sm ' +
-                  (m.role === 'user' ? 'bg-blue-600 text-white' : 'bg-gray-100/90 text-gray-800 backdrop-blur-sm')
-                }>
-                  <span>{m.content}</span>
+              <div key={idx}>
+                <div className={`message-row flex items-end gap-2 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  {m.role === 'assistant' ? (
+                    <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-blue-600 text-white grid place-items-center shrink-0">
+                      <Bot className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    </div>
+                  ) : null}
+                  {m.content ? (
+                    <div className={
+                      'px-3 py-2 rounded-2xl transition whitespace-pre-wrap break-words max-w-[85%] shadow-sm text-[13px] sm:text-sm ' +
+                      (m.role === 'user' ? 'bg-blue-600 text-white' : 'bg-gray-100/90 text-gray-800 backdrop-blur-sm')
+                    }>
+                      <span>{m.content}</span>
+                    </div>
+                  ) : null}
+                  {m.role === 'user' ? (
+                    <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-slate-700 text-white grid place-items-center shrink-0">
+                      <User className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    </div>
+                  ) : null}
                 </div>
-                {m.role === 'user' ? (
-                  <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-slate-700 text-white grid place-items-center shrink-0">
-                    <User className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                {m.products && m.products.length > 0 ? (
+                  <div className="-mx-3 px-3 mt-1">
+                    {m.products.length === 1 ? (
+                      <div className="bg-gray-100/90 rounded-2xl p-2 shadow-sm cursor-pointer" onClick={() => setQuickView(m.products![0])}>
+                        <div className="flex items-center gap-3">
+                          <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-gray-100 shrink-0">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={m.products![0].imageUrl} alt={m.products![0].name} className="w-full h-full object-cover" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-slate-900 line-clamp-2">{m.products![0].name}</p>
+                            <p className="text-xs text-blue-700 font-semibold mt-0.5">Rp {Number(m.products![0].price||0).toLocaleString('id-ID')}</p>
+                            {m.products![0].size ? (
+                              <p className="text-[11px] text-slate-500 mt-0.5">Ukuran: {m.products![0].size}</p>
+                            ) : null}
+                            <p className="text-[11px] text-slate-600 line-clamp-2 mt-0.5">{m.products![0].description}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto no-scrollbar">
+                        <div className="flex gap-3 pr-1">
+                          {m.products.map((p, i) => (
+                            <button
+                              key={i}
+                              className="min-w-[220px] max-w-[220px] bg-gray-100/90 rounded-xl p-2 text-left hover:bg-gray-50 transition shadow-sm"
+                              onClick={() => setQuickView(p)}
+                            >
+                              <div className="relative w-full h-28 rounded-lg overflow-hidden bg-gray-100">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover" />
+                              </div>
+                              <p className="mt-2 text-[13px] font-medium text-slate-900 line-clamp-2">{p.name}</p>
+                              <p className="text-[12px] text-blue-700 font-semibold">Rp {Number(p.price||0).toLocaleString('id-ID')}</p>
+                              {p.size ? (
+                                <p className="text-[11px] text-slate-500">Ukuran: {p.size}</p>
+                              ) : null}
+                              <p className="text-[11px] text-slate-600 line-clamp-2 mt-0.5">{p.description}</p>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ) : null}
               </div>
             ))}
             {loading ? (
               <div className="text-blue-600 text-sm animate-pulse">{adminMode ? 'Memproses perintah...' : 'Mencari produk...'}</div>
-            ) : null}
-            {/* Quick actions removed to simplify UI */}
-            {products ? (
-              <>
-                <div className="flex items-center justify-between mt-1 mb-1">
-                  <p className="text-xs text-slate-600">Rekomendasi untukmu{Array.isArray(products) && products.length ? ` · ${products.length} produk` : ''}</p>
-                  <div className="flex items-center gap-2">
-                    <a href="/katalog" className="text-xs text-blue-600 hover:text-blue-800 underline underline-offset-2">Lihat katalog</a>
-                    <button
-                      onClick={() => { setProducts(null); trackEvent('chat_results_clear', {}); }}
-                      className="text-xs text-slate-600 hover:text-slate-900"
-                      aria-label="Kosongkan hasil"
-                    >
-                      Kosongkan
-                    </button>
-                  </div>
-                </div>
-                {products.length === 0 ? (
-                  <div className="text-gray-500 text-sm">Tidak ada produk.</div>
-                ) : products.length === 1 ? (
-                  <div className="border border-gray-200 rounded-xl p-2 hover:bg-gray-50 transition cursor-pointer" onClick={() => setQuickView(products[0])}>
-                    <div className="flex items-center gap-3">
-                      <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-gray-100 shrink-0">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={products[0].imageUrl} alt={products[0].name} className="w-full h-full object-cover" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-slate-900 line-clamp-2">{products[0].name}</p>
-                        <p className="text-xs text-blue-700 font-semibold mt-0.5">Rp {Number(products[0].price||0).toLocaleString('id-ID')}</p>
-                        {products[0].size ? (
-                          <p className="text-[11px] text-slate-500 mt-0.5">Ukuran: {products[0].size}</p>
-                        ) : null}
-                        <p className="text-[11px] text-slate-600 line-clamp-2 mt-0.5">{products[0].description}</p>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="-mx-3 px-3 overflow-x-auto no-scrollbar">
-                    <div className="flex gap-3 pr-1">
-                      {products.map((p, i) => (
-                        <button
-                          key={i}
-                          className="min-w-[220px] max-w-[220px] border border-gray-200 rounded-xl p-2 text-left hover:bg-gray-50 transition"
-                          onClick={() => setQuickView(p)}
-                        >
-                          <div className="relative w-full h-28 rounded-lg overflow-hidden bg-gray-100">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover" />
-                          </div>
-                          <p className="mt-2 text-[13px] font-medium text-slate-900 line-clamp-2">{p.name}</p>
-                          <p className="text-[12px] text-blue-700 font-semibold">Rp {Number(p.price||0).toLocaleString('id-ID')}</p>
-                          {p.size ? (
-                            <p className="text-[11px] text-slate-500">Ukuran: {p.size}</p>
-                          ) : null}
-                          <p className="text-[11px] text-slate-600 line-clamp-2 mt-0.5">{p.description}</p>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </>
             ) : null}
             <div ref={endRef} />
           </div>

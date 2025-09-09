@@ -1,5 +1,5 @@
 export const siteConfig = {
-  name: 'ThriftinAja',
+  name: 'ThriftTu',
   tagline: 'Bikin Gayamu Bicara',
   description: 'Thrift shop modern dengan kurasi berkualitas dan AI chatbot untuk bantu cari produk.',
   url: process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',

@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import { useMemo } from 'react';
+import { ShoppingCart } from 'lucide-react';
 import type { ProductItem } from '@/lib/sheets';
 import { trackEvent } from '@/lib/analytics';
 import { siteConfig } from '@/config/site';
@@ -76,10 +77,82 @@ export default function ProductCard({ product, hideCta, onClick }: Props) {
         <div className="mt-2 text-slate-600 text-[11px] sm:text-xs leading-relaxed line-clamp-2 min-h-[32px]">
           {product.description}
         </div>
-        <div className="mt-2 text-[11px] sm:text-[12px] text-slate-500 leading-snug min-h-[18px]">
-          {product.size ? (<div>Ukuran {product.size}</div>) : null}
+        <div className="mt-2 text-[11px] sm:text-[12px] text-slate-500 leading-snug min-h-[18px] flex items-center justify-between">
+          {product.size ? (<div>Ukuran {product.size}</div>) : <span />}
+          {typeof product.stock === 'number' ? (
+            <span className={`inline-flex items-center px-2 py-0.5 rounded-full ${product.stock>0 ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-700'}`}>
+              {product.stock>0 ? `Stok ${product.stock}` : 'Stok habis'}
+            </span>
+          ) : null}
         </div>
-        <div className="mt-auto pt-3 flex items-center justify-end">
+        <div className="mt-auto pt-3 flex items-center justify-between gap-2">
+          {/* Tambah ke Cart (ikon) */}
+          {!hideCta && (
+            <button
+              onClick={(e) => {
+                try {
+                  const raw = localStorage.getItem('cart');
+                  const cart = raw ? JSON.parse(raw) as any[] : [];
+                  const item = { id: product.id, name: product.name, price: product.price, imageUrl: product.imageUrl, size: product.size };
+                  const sameCount = cart.filter(x => x.id === product.id).length;
+                  const max = typeof product.stock === 'number' ? product.stock : Infinity;
+                  if (sameCount >= max) {
+                    const el = document.createElement('div');
+                    el.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 bg-rose-600 text-white px-3 py-2 rounded-xl shadow z-[9999]';
+                    el.textContent = 'Jumlah melebihi stok tersedia';
+                    document.body.appendChild(el);
+                    setTimeout(()=>el.remove(), 1800);
+                    return;
+                  }
+                  cart.push(item);
+                  localStorage.setItem('cart', JSON.stringify(cart));
+                  window.dispatchEvent(new Event('cart:updated'));
+                  trackEvent('cart_add', { id: product.id, name: product.name, price: product.price });
+                  // Log ke backend untuk notifikasi admin
+                  try {
+                    fetch('/api/analytics/cart-add', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ id: product.id, name: product.name, size: product.size, price: product.price })
+                    });
+                  } catch {}
+                } catch {}
+                // simple fly-to-cart animation
+                try {
+                  const cartEl = document.getElementById('cart-icon');
+                  const imgEl = e.currentTarget.closest('.card')?.querySelector('img') as HTMLImageElement | null;
+                  if (cartEl && imgEl) {
+                    const rectStart = imgEl.getBoundingClientRect();
+                    const rectEnd = cartEl.getBoundingClientRect();
+                    const clone = imgEl.cloneNode(true) as HTMLImageElement;
+                    clone.style.position = 'fixed';
+                    clone.style.left = `${rectStart.left}px`;
+                    clone.style.top = `${rectStart.top}px`;
+                    clone.style.width = `${rectStart.width}px`;
+                    clone.style.height = `${rectStart.height}px`;
+                    clone.style.borderRadius = '8px';
+                    clone.style.zIndex = '9999';
+                    clone.style.transition = 'all .6s cubic-bezier(.22,.61,.36,1)';
+                    document.body.appendChild(clone);
+                    requestAnimationFrame(() => {
+                      clone.style.left = `${rectEnd.left}px`;
+                      clone.style.top = `${rectEnd.top}px`;
+                      clone.style.width = `16px`;
+                      clone.style.height = `16px`;
+                      clone.style.opacity = '0.7';
+                      clone.style.borderRadius = '9999px';
+                    });
+                    setTimeout(() => clone.remove(), 700);
+                  }
+                } catch {}
+              }}
+              className="rounded-xl border border-gray-300 p-2 text-slate-700 hover:bg-gray-50"
+              aria-label="Tambah ke Cart"
+              title="Tambah ke Cart"
+            >
+              <ShoppingCart className="w-4 h-4" />
+            </button>
+          )}
           {!hideCta && waUrl ? (
             <a
               href={waUrl}

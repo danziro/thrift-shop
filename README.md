@@ -22,35 +22,42 @@
  Buat file `.env.local` di root dan isi sesuai kebutuhan:
  
  ```env
- # URL dasar site (tanpa slash di akhir)
- NEXT_PUBLIC_SITE_URL=https://your-domain.com
- 
- # Google Analytics (opsional)
- NEXT_PUBLIC_GA_ID=G-XXXXXXXXXX
- 
- # WhatsApp untuk CTA pembelian (628xx… tanpa +)
- NEXT_PUBLIC_WHATSAPP_PHONE=6281234567890
- 
- # Supabase (image upload)
- NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
- SUPABASE_SERVICE_ROLE=your-service-role-key
- SUPABASE_BUCKET=public
- 
- # Google Sheets API (produk)
- GOOGLE_PROJECT_ID=...
- GOOGLE_CLIENT_EMAIL=...
- GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
- GOOGLE_SHEETS_ID=your_sheet_id
- GOOGLE_SHEETS_TAB=Products
- 
- # Admin security (lihat middleware implementasi)
- # ADMIN_USERNAME=...
- # ADMIN_PASSWORD=...
- ```
+# URL dasar site (tanpa slash di akhir)
+NEXT_PUBLIC_SITE_URL=https://your-domain.com
+
+# Google Analytics (opsional)
+NEXT_PUBLIC_GA_ID=G-XXXXXXXXXX
+
+# WhatsApp untuk CTA pembelian (628xx… tanpa +)
+NEXT_PUBLIC_WHATSAPP_PHONE=6281234567890
+
+# Supabase (image upload via service role, digunakan di server API)
+NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
+SUPABASE_SERVICE_ROLE=your-service-role-key
+SUPABASE_BUCKET=public
+
+# Google Sheets (Service Account) — selaras dengan lib/sheets.ts
+GOOGLE_SERVICE_ACCOUNT_EMAIL=your-sa@project.iam.gserviceaccount.com
+GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"  # gunakan escape \n
+GOOGLE_SHEET_ID=your_sheet_id
+GOOGLE_SHEET_RANGE=Sheet1!A:K
+
+# LLM (opsional, untuk chat & admin NLP)
+GEMINI_API_KEY=...
+GEMINI_MODEL=gemini-2.5-flash
+OPENAI_API_KEY=...
+LLM_TIMEOUT_MS=6000
+CHAT_MESSAGE_USE_LLM=false
+
+# Admin security (Basic Auth; Wajib untuk /admin & /api/admin/*)
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=supersecret
+```
  
  Catatan:
- - `next.config.ts` otomatis mengizinkan `next/image` untuk domain di `NEXT_PUBLIC_SUPABASE_URL`.
- - GA opsional: event akan dikirim jika `NEXT_PUBLIC_GA_ID` tersedia.
+- `next.config.ts` mengizinkan `next/image` untuk `**.supabase.co` dan host spesifik dari `NEXT_PUBLIC_SUPABASE_URL`.
+- GA opsional: event akan dikirim jika `NEXT_PUBLIC_GA_ID` tersedia.
+- Middleware Basic Auth kini memeriksa `ADMIN_USERNAME` dan `ADMIN_PASSWORD` (keduanya wajib di-set di environment production).
  
  ---
  
@@ -86,7 +93,7 @@
  
  ## 5) Admin & Endpoint API
  
- - Halaman Admin: `/admin` (Basic Auth, lihat middleware proyek).
+ - Halaman Admin: `/admin` (Basic Auth, username+password wajib; lihat `middleware.ts`).
  - Endpoints (semua di-protect sesuai middleware):
    - `GET /api/admin/products` — list produk.
    - `POST /api/admin/products` — tambah produk.
@@ -104,6 +111,7 @@
  - JSON-LD:
    - Organization disuntikkan di layout.
    - Product List (ItemList) di `components/ProductGrid.tsx`.
+   - ProductCard menyuntikkan JSON-LD Product per item (dengan IDR Offer & brand).
    - Product per item di `components/ProductCard.tsx`.
  - Analytics:
    - GA via `NEXT_PUBLIC_GA_ID`.
@@ -139,8 +147,13 @@
  
  ---
  
- ## 9) Troubleshooting
+ ## 8.5) Loading Skeleton & Empty States
+
+- ProductGrid menampilkan pesan empty state saat tidak ada data, dan skeleton saat terjadi error/fetch gagal (fallback try/catch).
+- Halaman Admin memiliki skeleton rows saat loading daftar produk.
+
+## 9) Troubleshooting
  
  - Gambar tidak muncul/teroptimasi: cek `NEXT_PUBLIC_SUPABASE_URL` valid (hostname benar) dan bucket publik.
- - GA event tidak terlihat: pastikan `NEXT_PUBLIC_GA_ID` terisi dan tidak di-block ad blocker.
- - Basic Auth admin/API: lihat middleware; akses via browser akan memunculkan prompt; di tools gunakan Authorization header (Basic base64).
+- GA event tidak terlihat: pastikan `NEXT_PUBLIC_GA_ID` terisi dan tidak di-block ad blocker.
+- Basic Auth admin/API: pastikan `ADMIN_USERNAME` & `ADMIN_PASSWORD` terisi. Akses via browser akan memunculkan prompt; di tools gunakan Authorization header (Basic base64: username:password).

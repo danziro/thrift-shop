@@ -6,13 +6,15 @@ export type ProductItem = {
   price: number;
   description: string;
   category: string;
-  imageUrl: string;
+  imageUrl?: string;
   images?: string[];
   buyUrl?: string;
   brand?: string;
   size?: string;
   color?: string;
   status?: 'Published' | 'Draft' | string;
+  createdAt?: string; // dari kolom Timestamp (A)
+  stock?: number; // stok tersedia
 };
 
 let cachedProducts: ProductItem[] | null = null;
@@ -26,7 +28,6 @@ function getGoogleJwtClient() {
   if (!clientEmail || !privateKey) {
     throw new Error('Google Service Account env tidak lengkap. Cek GOOGLE_SERVICE_ACCOUNT_EMAIL dan GOOGLE_PRIVATE_KEY');
   }
-
   return new google.auth.JWT({
     email: clientEmail,
     key: privateKey,
@@ -41,7 +42,7 @@ export async function fetchSheetProducts(): Promise<ProductItem[]> {
   }
 
   const sheetId = process.env.GOOGLE_SHEET_ID;
-  const range = process.env.GOOGLE_SHEET_RANGE || 'Sheet1!A:E';
+  const range = process.env.GOOGLE_SHEET_RANGE || 'Sheet1!A:M';
   if (!sheetId) throw new Error('GOOGLE_SHEET_ID tidak diset');
 
   const auth = getGoogleJwtClient();
@@ -49,29 +50,37 @@ export async function fetchSheetProducts(): Promise<ProductItem[]> {
   const res = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range });
 
   const values = res.data.values || [];
-  // Asumsi header baru (admin): ID | Nama | Brand | Ukuran | Warna | Harga | Deskripsi | Kategori | Link Gambar | Buy URL | Status
+  // Asumsi header (baru): Timestamp | ID | Nama | Brand | Ukuran | Warna | Harga | Deskripsi | Kategori | Stok | Buy URL | Status | Gambar
   const [header, ...rows] = values;
   if (!header) return [];
 
   const products: ProductItem[] = rows.map((row) => {
-    const [id, name, brand, size, color, price, description, category, imageUrl, buyUrl, status] = row;
+    const [timestamp, id, name, brand, size, color, price, description, category, stock, buyUrl, status, imageUrl] = row;
     const parsedPrice = Number(String(price || '0').toString().replace(/[^0-9.]/g, '')) || 0;
     const rawImg = String(imageUrl || '').trim();
-    const list = rawImg ? rawImg.split(',').map(s => s.trim()).filter(Boolean) : [];
-    const first = list[0] || rawImg;
+    const rawBuy = String(buyUrl || '').trim();
+    const isValidUrl = (u: string) => /^https?:\/\//.test(u) || u.startsWith('/');
+    const isLikelyImage = (u: string) => /\.(png|jpe?g|webp|gif|bmp|svg)(\?|$)/i.test(u) || /\/storage\/v1\/(object|render)\//.test(u) || /supabase\.co\//.test(u);
+    let finalImage = isValidUrl(rawImg) ? rawImg : '';
+    let finalBuy = isValidUrl(rawBuy) ? rawBuy : '';
+    if (!finalImage && finalBuy && isLikelyImage(finalBuy)) {
+      finalImage = finalBuy;
+      finalBuy = '';
+    }
     return {
       id: String(id || '').trim() || undefined,
       name: String(name || '').trim(),
       price: parsedPrice,
       description: String(description || '').trim(),
       category: String(category || '').trim(),
-      imageUrl: String(first || '').trim(),
-      images: list.length ? list : undefined,
-      buyUrl: String(buyUrl || '').trim() || undefined,
+      imageUrl: isValidUrl(finalImage) ? finalImage : '',
+      buyUrl: finalBuy || undefined,
       brand: String(brand || '').trim() || undefined,
       size: String(size || '').trim() || undefined,
       color: String(color || '').trim() || undefined,
       status: String(status || '').trim() || undefined,
+      createdAt: String(timestamp || '').trim() || undefined,
+      stock: Number(stock ?? '') || undefined,
     };
   });
 
@@ -101,6 +110,7 @@ export function filterProducts(products: ProductItem[], params: SearchParams): P
 
   const filtered = products.filter((p) => {
     if (p.status && p.status.toLowerCase() === 'draft') return false;
+    if (p.status && p.status.toLowerCase() === 'sold') return false; // exclude sold dari katalog
     if (category && !p.category.toLowerCase().includes(category)) return false;
     if (brandFilter && !(p.brand || '').toLowerCase().includes(brandFilter)) return false;
     if (sizeFilter && !(p.size || '').toLowerCase().includes(sizeFilter)) return false;
@@ -166,26 +176,27 @@ function ensureAuthSheets() {
   if (!sheetId) throw new Error('GOOGLE_SHEET_ID tidak diset');
   const auth = getGoogleJwtClient();
   const sheets = google.sheets({ version: 'v4', auth });
-  const range = process.env.GOOGLE_SHEET_RANGE || 'Sheet1!A:K';
+  const range = process.env.GOOGLE_SHEET_RANGE || 'Sheet1!A:L';
   return { sheets, sheetId, range };
 }
 
 export async function createProduct(data: ProductItem): Promise<ProductItem> {
   const id = `P-${Date.now()}`;
-  const imgList = Array.isArray(data.images) && data.images.length ? data.images : (data.imageUrl ? [data.imageUrl] : []);
-  const imgJoined = imgList.join(',');
+  const nowIso = new Date().toISOString();
   const row = [
-    id,
-    data.name || '',
-    data.brand || '',
-    data.size || '',
-    data.color || '',
-    data.price || 0,
-    data.description || '',
-    data.category || '',
-    imgJoined,
-    data.buyUrl || '',
-    data.status || 'Published',
+    data.createdAt || nowIso, // Timestamp (A)
+    id,                       // ID (B)
+    data.name || '',          // Nama (C)
+    data.brand || '',         // Brand (D)
+    data.size || '',          // Ukuran (E)
+    data.color || '',         // Warna (F)
+    data.price || 0,          // Harga (G)
+    data.description || '',   // Deskripsi (H)
+    data.category || '',      // Kategori (I)
+    data.stock ?? 1,          // Stok (J)
+    data.buyUrl || '',        // Buy URL (K)
+    data.status || 'Published', // Status (L)
+    (data.imageUrl && (/^https?:\/\//.test(data.imageUrl) || data.imageUrl.startsWith('/'))) ? data.imageUrl : '', // Gambar (M)
   ];
   const { sheets, sheetId, range } = ensureAuthSheets();
   await sheets.spreadsheets.values.append({
@@ -195,42 +206,52 @@ export async function createProduct(data: ProductItem): Promise<ProductItem> {
     requestBody: { values: [row] },
   });
   cachedProducts = null;
-  return { ...data, id };
+  return { ...data, id, createdAt: data.createdAt || nowIso };
 }
 
-export async function updateProduct(id: string, data: Partial<ProductItem>): Promise<void> {
+export async function updateProduct(data: Partial<ProductItem> & { id: string }): Promise<void> {
   const { sheets, sheetId, range } = ensureAuthSheets();
   const res = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range });
   const values = res.data.values || [];
   const [header, ...rows] = values;
-  const rowIndex = rows.findIndex((r) => String(r[0]).trim() === id);
+  const rowIndex = rows.findIndex((r) => String(r[1]).trim() === data.id);
   if (rowIndex === -1) throw new Error('Produk tidak ditemukan');
   const idx = rowIndex + 1; // offset header
   const current = rows[rowIndex];
-  // current[8] may contain comma-separated URLs
-  const currentRawImg: string = String(current[8] || '').trim();
-  const currentImgs = currentRawImg ? currentRawImg.split(',').map(s=>s.trim()).filter(Boolean) : [];
-  const nextImgs = (Array.isArray(data.images) ? data.images : undefined) || (data.imageUrl ? [data.imageUrl] : currentImgs);
-  const imgJoined = nextImgs.join(',');
   const merged = {
-    id: current[0],
-    name: data.name ?? current[1],
-    brand: data.brand ?? current[2],
-    size: data.size ?? current[3],
-    color: data.color ?? current[4],
-    price: data.price ?? current[5],
-    description: data.description ?? current[6],
-    category: data.category ?? current[7],
-    imageUrl: imgJoined,
-    buyUrl: data.buyUrl ?? current[9],
-    status: data.status ?? current[10],
+    id: current[1],
+    name: data.name ?? current[2],
+    brand: data.brand ?? current[3],
+    size: data.size ?? current[4],
+    color: data.color ?? current[5],
+    price: data.price ?? current[6],
+    description: data.description ?? current[7],
+    category: data.category ?? current[8],
+    buyUrl: data.buyUrl ?? current[10],
+    status: data.status ?? current[11],
+    createdAt: current[0] || new Date().toISOString(),
+    stock: (() => {
+      const next = data.stock ?? (Number(current[9] ?? '') || 0);
+      return next;
+    })(),
+    imageUrl: (() => {
+      const next = (data.imageUrl ?? current[12] ?? '').toString().trim();
+      return (/^https?:\/\//.test(next) || next.startsWith('/')) ? next : '';
+    })(),
   };
-  const rowRange = `${(process.env.GOOGLE_SHEET_RANGE || 'Sheet1!A:K').split('!')[0]}!A${idx + 1}:K${idx + 1}`;
+  // Auto-set Sold if stock <= 0
+  if (Number(merged.stock || 0) <= 0) merged.status = 'Sold';
+  // Jika stock > 0 dan status sebelumnya Sold, set ke Published agar konsisten
+  if (Number(merged.stock || 0) > 0 && String(merged.status||'').toLowerCase() === 'sold') {
+    merged.status = 'Published';
+  }
+  const rowRange = `${(process.env.GOOGLE_SHEET_RANGE || 'Sheet1!A:M').split('!')[0]}!A${idx + 1}:M${idx + 1}`;
   await sheets.spreadsheets.values.update({
     spreadsheetId: sheetId,
     range: rowRange,
     valueInputOption: 'USER_ENTERED',
     requestBody: { values: [[
+      merged.createdAt,
       merged.id,
       merged.name,
       merged.brand,
@@ -239,11 +260,28 @@ export async function updateProduct(id: string, data: Partial<ProductItem>): Pro
       merged.price,
       merged.description,
       merged.category,
-      merged.imageUrl,
+      merged.stock ?? 0,
       merged.buyUrl,
       merged.status,
+      merged.imageUrl || '',
     ]] },
   });
+  // Catat log stok jika ada perubahan
+  try {
+    const prevStockNum = Number(current[9] ?? '') || 0;
+    if (typeof merged.stock === 'number' && merged.stock !== prevStockNum) {
+      const delta = merged.stock - prevStockNum;
+      const logRange = `${(process.env.GOOGLE_STOCK_LOG_RANGE || 'StockLog!A:E')}`;
+      await sheets.spreadsheets.values.append({
+        spreadsheetId: sheetId,
+        range: logRange,
+        valueInputOption: 'USER_ENTERED',
+        requestBody: { values: [[new Date().toISOString(), merged.id, delta, merged.stock, delta>0 ? 'restock' : 'sold_adjust']] },
+      });
+    }
+  } catch (e) {
+    console.error('StockLog append error', e);
+  }
   cachedProducts = null;
 }
 
@@ -252,13 +290,58 @@ export async function deleteProduct(id: string): Promise<void> {
   const res = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range });
   const values = res.data.values || [];
   const [header, ...rows] = values;
-  const rowIndex = rows.findIndex((r) => String(r[0]).trim() === id);
+  const rowIndex = rows.findIndex((r) => String(r[1]).trim() === id);
   if (rowIndex === -1) throw new Error('Produk tidak ditemukan');
   const idx = rowIndex + 2; // +2: header (1) + 1-based index
-  const sheetName = (process.env.GOOGLE_SHEET_RANGE || 'Sheet1!A:K').split('!')[0];
-  const clearRange = `${sheetName}!A${idx}:K${idx}`;
+  const sheetName = (process.env.GOOGLE_SHEET_RANGE || 'Sheet1!A:M').split('!')[0];
+  const clearRange = `${sheetName}!A${idx}:M${idx}`;
   await sheets.spreadsheets.values.clear({ spreadsheetId: sheetId, range: clearRange, requestBody: {} });
   cachedProducts = null;
 }
 
 
+
+// ========== Logs Helpers ==========
+export type CartAddLogItem = { time: string; id: string; name: string; size?: string; price?: number; userAgent?: string };
+export async function appendCartAddLog(entry: { id?: string; name?: string; size?: string; price?: number; userAgent?: string }) {
+  const { sheets, sheetId } = ensureAuthSheets();
+  const range = process.env.GOOGLE_CART_LOG_RANGE || 'CartAddLog!A:F';
+  await sheets.spreadsheets.values.append({
+    spreadsheetId: sheetId,
+    range,
+    valueInputOption: 'USER_ENTERED',
+    requestBody: { values: [[new Date().toISOString(), entry.id || '', entry.name || '', entry.size || '', Number(entry.price||0), (entry.userAgent||'')]] },
+  });
+}
+
+export async function listCartAddLogs(limit = 20): Promise<CartAddLogItem[]> {
+  const { sheets, sheetId } = ensureAuthSheets();
+  const range = process.env.GOOGLE_CART_LOG_RANGE || 'CartAddLog!A:F';
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range });
+  const values = res.data.values || [];
+  const [, ...rows] = values; // skip header jika ada
+  const mapped = rows.map(r => ({ time: String(r[0]||''), id: String(r[1]||''), name: String(r[2]||''), size: r[3], price: Number(r[4]||0), userAgent: r[5] })) as CartAddLogItem[];
+  return mapped.slice(-limit).reverse();
+}
+
+export type QueryLogItem = { time: string; text: string; userAgent?: string; referer?: string };
+export async function appendQueryLog(entry: { text: string; userAgent?: string; referer?: string }) {
+  const { sheets, sheetId } = ensureAuthSheets();
+  const range = process.env.GOOGLE_QUERY_LOG_RANGE || 'Queries!A:D';
+  await sheets.spreadsheets.values.append({
+    spreadsheetId: sheetId,
+    range,
+    valueInputOption: 'USER_ENTERED',
+    requestBody: { values: [[new Date().toISOString(), entry.text, entry.userAgent||'', entry.referer||'']] },
+  });
+}
+
+export async function listQueryLogs(limit = 50): Promise<QueryLogItem[]> {
+  const { sheets, sheetId } = ensureAuthSheets();
+  const range = process.env.GOOGLE_QUERY_LOG_RANGE || 'Queries!A:D';
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range });
+  const values = res.data.values || [];
+  const [, ...rows] = values;
+  const mapped = rows.map(r => ({ time: String(r[0]||''), text: String(r[1]||''), userAgent: r[2], referer: r[3] })) as QueryLogItem[];
+  return mapped.slice(-limit).reverse();
+}

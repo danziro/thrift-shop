@@ -5,7 +5,8 @@ export function middleware(req: NextRequest) {
   const path = url.pathname;
   if (path.startsWith('/admin') || path.startsWith('/api/admin')) {
     const auth = req.headers.get('authorization');
-    const expected = process.env.ADMIN_PASSWORD || '';
+    const expectedUser = process.env.ADMIN_USERNAME || '';
+    const expectedPass = process.env.ADMIN_PASSWORD || '';
     if (!auth || !auth.startsWith('Basic ')) {
       if (path.startsWith('/api/')) {
         return NextResponse.json({ error: 'Auth required' }, {
@@ -22,9 +23,11 @@ export function middleware(req: NextRequest) {
       const [, base64] = auth.split(' ');
       // Edge runtime friendly base64 decode
       const decoded = atob(base64);
-      // format: username:password → kita hanya cek password
-      const pass = decoded.split(':').slice(1).join(':');
-      if (!expected || pass !== expected) {
+      // format: username:password
+      const [user, ...rest] = decoded.split(':');
+      const pass = rest.join(':');
+      // Wajib: env harus tersedia dan cocok
+      if (!expectedUser || !expectedPass || user !== expectedUser || pass !== expectedPass) {
         if (path.startsWith('/api/')) {
           return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }

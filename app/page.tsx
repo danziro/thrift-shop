@@ -1,51 +1,64 @@
 import ProductGrid from '@/components/ProductGrid';
+import NewProductsGrid from '@/components/NewProductsGrid';
 import Reveal from '@/components/Reveal';
 import HeroCTAs from '@/components/HeroCTAs';
+import { fetchSheetProducts, type ProductItem } from '@/lib/sheets';
 
-export default function Home() {
+function isNewProduct(p: ProductItem) {
+  const t = p.createdAt ? new Date(p.createdAt).getTime() : 0;
+  if (!t) return false;
+  const diffDays = (Date.now() - t) / (1000 * 60 * 60 * 24);
+  return diffDays <= 3;
+}
+
+export default async function Home() {
+  // Cek apakah ada produk baru utk menampilkan section
+  let hasNew = false;
+  try {
+    const items = await fetchSheetProducts();
+    hasNew = items.some(isNewProduct);
+  } catch {}
+
   return (
     <main className="min-h-screen">
-      <section className="relative overflow-hidden hero-surface">
-        {/* Decorative blobs */}
-        <div className="blob blue -top-10 -left-10 absolute" />
-        <div className="blob amber top-6 right-0 absolute" />
+      <section className="surface-muted border-b divider-subtle">
         <div className="relative mx-auto max-w-6xl px-6 py-16 sm:py-20">
           <Reveal className="text-center">
             <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-slate-900 sheen-text">
-              Sneaker Thrift — Sepatu Bekas, Cerita Baru
+              ThriftTu — Bikin Gayamu Bicara
             </h1>
             <p className="mt-4 text-lg text-slate-700 sheen-subtle">
-              Sepatu ori pre-loved, harga masuk akal, kualitas masih ngacir. Cukup chat, biar AI yang nyariin.
+              Kualitas dijamin, di tongkrongan diliatin. Cukup chat, AI yang nyariin 24 jam buat kamu.
             </p>
           </Reveal>
           <HeroCTAs />
         </div>
       </section>
 
-      <section className="relative mx-auto max-w-6xl px-6 py-12 overflow-hidden">
-        <div className="absolute inset-0 -z-10 bg-gradient-to-b from-amber-50 via-amber-50/60 to-transparent" />
+      <section className="relative mx-auto max-w-6xl px-6 py-12">
         <h2 className="section-title">Kenapa Pilih Kami?</h2>
-        <div className="mt-6 grid grid-cols-3 gap-3 sm:gap-4 transition-transform duration-500 will-change-transform">
-          <Reveal className="card p-3 sm:p-5">
-            <p className="text-sm sm:text-base font-semibold text-slate-900">Ori, Aman, Nyaman</p>
-            <p className="text-slate-600 mt-2 text-[11px] sm:text-sm leading-relaxed">Kurasi sepatu ori pre-loved. Detail kondisi jujur, tanpa drama.</p>
-          </Reveal>
-          <Reveal className="card p-3 sm:p-5">
-            <p className="text-sm sm:text-base font-semibold text-slate-900">Harga Masuk Akal</p>
-            <p className="text-slate-600 mt-2 text-[11px] sm:text-sm leading-relaxed">Biar kantong aman, rasa tetap jalan. Kualitas dulu, harga menyusul.</p>
-          </Reveal>
-          <Reveal className="card p-3 sm:p-5">
-            <p className="text-sm sm:text-base font-semibold text-slate-900">Cari Sekali, Ketemu Pasti</p>
-            <p className="text-slate-600 mt-2 text-[11px] sm:text-sm leading-relaxed">Chat AI kami. Sebutin brand, ukuran, budget—langsung terkurasi.</p>
+        <div className="mt-6">
+          <Reveal className="card p-4 sm:p-6">
+            <p className="text-slate-700 text-sm sm:text-base leading-relaxed">
+              Sepatu ori pre-loved, terkurasi rapi, harga masuk akal — cukup chat, sisanya kami bantu.
+            </p>
           </Reveal>
         </div>
       </section>
 
+      {/* Produk Terbaru (hanya saat ada) */}
+      {hasNew ? (
+        <section className="relative mx-auto max-w-6xl px-6 py-12">
+          <h2 className="section-title">Produk Terbaru</h2>
+          <div className="mt-6">
+            <NewProductsGrid limit={8} />
+          </div>
+        </section>
+      ) : null}
+
       {/* Katalog penuh di landing */}
-      <section id="katalog" className="mx-auto max-w-6xl px-6 pb-16">
-        <div className="flex items-end justify-between">
-          <h2 className="text-2xl font-bold text-gray-900">Katalog Sepatu</h2>
-        </div>
+      <section id="katalog" className="relative mx-auto max-w-6xl px-6 pb-16">
+      <h2 className="section-title">Katalog Sepatu</h2>
         <div className="mt-6">
           <ProductGrid />
         </div>
