@@ -25,7 +25,7 @@ export async function PUT(req: Request) {
     const data = await req.json();
     const id = data?.id as string;
     if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
-    await updateProduct(id, data);
+    await updateProduct({ ...data, id });
     return NextResponse.json({ ok: true });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || 'Error' }, { status: 500 });
